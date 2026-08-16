@@ -180,10 +180,19 @@ def score_players(
             out.loc[group.index, "pool_type"] = "posicion (muestra corta)"
 
     # --- 3. Fiabilidad y contraccion hacia la media ---
-    out["reliability"] = out["minutes"].apply(
-        lambda m: reliability(m, reliability_half_point)
-    )
-    shrunk = 50.0 + out["reliability"] * (out["rate_percentile"] - 50.0)
+    # Sin minutos no se puede medir el tamano de la muestra. En ese caso NO se
+    # contrae (contraer con fiabilidad 0 aplanaria a todo el mundo a 50 y
+    # destruiria el ranking): se toma el dato tal cual y la fiabilidad queda
+    # vacia, para que quede visible que ese control no se ha aplicado.
+    minutes_available = out["minutes"].notna().any()
+    if minutes_available:
+        out["reliability"] = out["minutes"].apply(
+            lambda m: reliability(m, reliability_half_point)
+        )
+        shrunk = 50.0 + out["reliability"] * (out["rate_percentile"] - 50.0)
+    else:
+        out["reliability"] = np.nan
+        shrunk = out["rate_percentile"]
 
     # --- 4. Traduccion a escala comun ---
     # rate_score  = calidad por-90 en bruto, traducida (senal de talento)
@@ -192,13 +201,20 @@ def score_players(
     out["perf_score"] = shrunk * out["league_coef"]
 
     # --- 5. Techo ---
-    headroom = out["age"].apply(age_headroom) if "age" in out.columns else 0.0
-    out["age_headroom"] = headroom
-    quality_gate = (out["rate_score"] / 100.0).clip(lower=0.0, upper=1.0)
-    out["potential_score"] = (
-        out["perf_score"]
-        + out["age_headroom"] * (100.0 - out["perf_score"]) * quality_gate
-    ).clip(upper=100.0)
+    # El techo es rendimiento actual + recorrido por edad. Sin edad no hay
+    # recorrido que estimar: se deja VACIO en vez de devolver el nivel actual
+    # disfrazado de techo, que es justo el error que llevaria a fichar mal.
+    if "age" in out.columns and out["age"].notna().any():
+        out["age_headroom"] = out["age"].apply(age_headroom)
+        quality_gate = (out["rate_score"] / 100.0).clip(lower=0.0, upper=1.0)
+        out["potential_score"] = (
+            out["perf_score"]
+            + out["age_headroom"] * (100.0 - out["perf_score"]) * quality_gate
+        ).clip(upper=100.0)
+        out.loc[out["age"].isna(), "potential_score"] = np.nan
+    else:
+        out["age_headroom"] = np.nan
+        out["potential_score"] = np.nan
 
     # Cuanto rinde por minuto frente a lo que se le reconoce.
     out["efficiency_gap"] = out["rate_score"] - out["perf_score"]
@@ -287,7 +303,9 @@ def rank(
         view = view[view["age"] <= max_age]
     if min_age is not None and "age" in view.columns:
         view = view[view["age"] >= min_age]
-    if min_minutes is not None:
+    # Solo se filtra por minutos si el export los trae: si no, este filtro
+    # vaciaria la lista entera en vez de no aplicarse.
+    if min_minutes is not None and view["minutes"].notna().any():
         view = view[view["minutes"].fillna(0) >= min_minutes]
     if min_reliability is not None:
         view = view[view["reliability"] >= min_reliability]

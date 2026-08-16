@@ -139,6 +139,7 @@ POSITION_WEIGHTS = {
         "dribbles_completed_p90": 0.05,
         "goals_p90": 0.05,
         "assists_p90": 0.05,
+        "passes_final_third_p90": 0.08,
     },
     AM: {
         "xa_p90": 0.16,
@@ -151,6 +152,8 @@ POSITION_WEIGHTS = {
         "progressive_carries_p90": 0.08,
         "touches_box_p90": 0.06,
         "pass_accuracy": 0.04,
+        "passes_final_third_p90": 0.06,
+        "recoveries_final_third_p90": 0.04,
     },
     W: {
         "xg_p90": 0.13,
@@ -163,6 +166,7 @@ POSITION_WEIGHTS = {
         "crosses_completed_p90": 0.06,
         "touches_box_p90": 0.06,
         "duels_won_pct": 0.04,
+        "recoveries_final_third_p90": 0.04,
     },
     ST: {
         "xg_p90": 0.20,
@@ -175,6 +179,8 @@ POSITION_WEIGHTS = {
         "duels_won_pct": 0.06,
         "dribbles_completed_p90": 0.06,
         "conversion_pct": 0.06,
+        "key_passes_p90": 0.05,
+        "recoveries_final_third_p90": 0.04,   # presion tras perdida
     },
 }
 

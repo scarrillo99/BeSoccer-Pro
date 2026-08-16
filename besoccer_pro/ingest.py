@@ -118,8 +118,15 @@ def load(
     default_league: str | None = None,
     season_end_year: int | None = None,
     drop_unknown_positions: bool = True,
+    default_position: str | None = None,
+    assume_per90: bool | None = None,
 ) -> tuple[pd.DataFrame, dict]:
-    """Carga + normaliza + asigna demarcacion. Listo para `scoring.score_players`."""
+    """Carga + normaliza + asigna demarcacion. Listo para `scoring.score_players`.
+
+    `default_position` cubre los exports que no traen demarcacion (listados ya
+    filtrados por posicion, como los rankings ponderados): se declara a mano
+    la demarcacion de todo el fichero.
+    """
     combined, report = load_raw(patterns, extra_map, delimiter, default_league)
 
     if "position" in combined.columns:
@@ -128,8 +135,20 @@ def load(
         combined["position_group"] = None
         report["warning_position"] = (
             "El export no trae columna de posicion: no se puede puntuar por "
-            "demarcacion. Anade la columna o usa --map."
+            "demarcacion. Anade la columna, usa --map, o declara la "
+            "demarcacion de todo el fichero con --assume-position."
         )
+
+    if default_position:
+        group = normalize_position(default_position)
+        if group is None:
+            raise ValueError(
+                f"Demarcacion no reconocida: '{default_position}'. "
+                "Usa GK, CB, FB, DM, CM, AM, W o ST."
+            )
+        missing = combined["position_group"].isna()
+        combined.loc[missing, "position_group"] = group
+        report["assumed_position"] = {"group": group, "rows": int(missing.sum())}
 
     unmapped_positions = combined[combined["position_group"].isna()]
     if len(unmapped_positions):
@@ -152,8 +171,10 @@ def load(
         combined = combined.drop_duplicates(subset=subset, keep="first")
         report["duplicates_removed"] = before - len(combined)
 
-    prepared = metrics.prepare(combined, season_end_year)
+    prepared = metrics.prepare(combined, season_end_year, assume_per90)
     report["rows_out"] = len(prepared)
+    report["has_minutes"] = metrics.has_minutes(prepared)
+    report["has_age"] = "age" in prepared.columns and prepared["age"].notna().any()
     report["metrics_present"] = sorted(
         m for m in cols.VOLUME_METRICS + cols.RATIO_METRICS
         if m in prepared.columns and prepared[m].notna().any()

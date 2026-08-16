@@ -33,9 +33,22 @@ def test_per90_is_nan_for_players_without_minutes():
     assert out["goals_p90"].isna().all()
 
 
-def test_missing_minutes_column_fails_loudly():
-    with pytest.raises(ValueError, match="minutos"):
-        metrics.add_per90(pd.DataFrame({"goals": [1.0]}))
+def test_without_minutes_values_are_taken_as_already_per90():
+    """Varias vistas de BeSoccer Pro exportan ya normalizado por 90.
+
+    Sin minutos no se puede dividir, asi que se asume que el dato ya viene
+    por-90 y se copia tal cual. La perdida (no poder medir la muestra) la
+    avisa la CLI; aqui solo se comprueba que no se rompe ni se inventa.
+    """
+    out = metrics.add_per90(pd.DataFrame({"goals": [0.47, 0.35]}))
+    assert out["goals_p90"].tolist() == [0.47, 0.35]
+    assert not metrics.has_minutes(out)
+
+
+def test_per90_mode_can_be_forced_either_way():
+    df = pd.DataFrame({"minutes": [900.0], "goals": [5.0]})
+    assert metrics.add_per90(df, assume_per90=True)["goals_p90"].iloc[0] == 5.0
+    assert metrics.add_per90(df, assume_per90=False)["goals_p90"].iloc[0] == 0.5
 
 
 def test_derives_ratios_that_the_export_omits():

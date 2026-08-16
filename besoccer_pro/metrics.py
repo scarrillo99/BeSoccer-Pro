@@ -156,18 +156,35 @@ def add_team_flags(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def add_per90(df: pd.DataFrame) -> pd.DataFrame:
+def has_minutes(df: pd.DataFrame) -> bool:
+    """True si el export trae minutos utilizables."""
+    return "minutes" in df.columns and df["minutes"].notna().any()
+
+
+def add_per90(df: pd.DataFrame, assume_per90: bool | None = None) -> pd.DataFrame:
     """Anade columnas `<metrica>_p90` para toda metrica de volumen presente.
 
-    Se exige un minimo de minutos para calcular el ratio: por debajo, el
-    por-90 es ruido puro y es preferible dejarlo vacio.
+    Con minutos, divide los totales. Sin minutos, asume que el export YA viene
+    normalizado por 90 —es lo que hacen varias vistas de BeSoccer Pro, como
+    "Ponderacion por metrica"— y copia los valores tal cual.
+
+    Ese segundo modo es degradado a proposito: sin minutos no hay forma de
+    saber si un 0,6 goles/90 son 2.400 minutos o 200, asi que no se puede
+    medir la fiabilidad de la muestra. Quien llame debe avisar al usuario.
     """
     out = df.copy()
-    if "minutes" not in out.columns:
-        raise ValueError(
-            "El export no tiene columna de minutos. Sin minutos no se puede "
-            "normalizar a por-90 ni medir fiabilidad. Revisa `doctor`."
-        )
+    already_per90 = (
+        assume_per90 if assume_per90 is not None else not has_minutes(out)
+    )
+
+    if already_per90:
+        for metric in cols.VOLUME_METRICS:
+            if metric in out.columns:
+                out[f"{metric}_p90"] = out[metric]
+        for card in ("yellow_cards", "red_cards"):
+            if card in out.columns:
+                out[f"{card}_p90"] = out[card]
+        return out
 
     minutes = out["minutes"].fillna(0)
     nineties = (minutes / 90.0).replace(0, np.nan)
@@ -244,13 +261,17 @@ def available_metrics(df: pd.DataFrame, weights: dict[str, float]) -> dict[str, 
     return {metric: weight / total for metric, weight in present.items()}
 
 
-def prepare(df: pd.DataFrame, season_end_year: int | None = None) -> pd.DataFrame:
+def prepare(
+    df: pd.DataFrame,
+    season_end_year: int | None = None,
+    assume_per90: bool | None = None,
+) -> pd.DataFrame:
     """Pipeline completo de normalizacion sobre un DataFrame ya mapeado."""
     out = coerce_numeric(df)
     out = derive_age(out, season_end_year)
     out = add_contract_years(out)
     out = add_team_flags(out)
     out = add_derived(out)
-    out = add_per90(out)
+    out = add_per90(out, assume_per90)
     out = add_derived(out)  # segunda pasada: ratios que dependen de p90
     return out

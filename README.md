@@ -256,7 +256,7 @@ besoccer_pro/
   cli.py        línea de comandos
 config/leagues.yaml   coeficientes editables
 tools/make_sample.py  generador de datos sintéticos de prueba
-tests/                103 tests
+tests/                114 tests
 ```
 
 ```bash

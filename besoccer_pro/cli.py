@@ -53,6 +53,15 @@ def _add_input_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--delimiter", help="Separador del CSV si la deteccion falla.")
     parser.add_argument("--default-league",
                         help="Liga a asignar si el export no trae la columna.")
+    parser.add_argument("--assume-position",
+                        help="Demarcacion de TODO el fichero cuando el export no "
+                             "la trae (ej. ST en un ranking de delanteros).")
+    parser.add_argument("--assume-per90", dest="assume_per90",
+                        action="store_true", default=None,
+                        help="Los valores del export ya vienen por 90 minutos.")
+    parser.add_argument("--assume-totals", dest="assume_per90",
+                        action="store_false",
+                        help="Los valores son totales de temporada (requiere minutos).")
     parser.add_argument("--season-end-year", type=int,
                         help="Ano de fin de temporada para calcular edades desde fecha de nacimiento.")
     parser.add_argument("--leagues-config",
@@ -86,6 +95,8 @@ def _load(args):
         delimiter=args.delimiter,
         default_league=args.default_league,
         season_end_year=args.season_end_year,
+        default_position=args.assume_position,
+        assume_per90=args.assume_per90,
     )
     strength = LeagueStrength.load(args.leagues_config)
     scored = scoring.score_players(
@@ -94,6 +105,26 @@ def _load(args):
     )
 
     warnings = []
+    if not report.get("has_minutes"):
+        warnings.append(
+            "SIN MINUTOS. Los valores se tratan como ya normalizados por 90. "
+            "No se puede medir el tamano de la muestra, asi que la columna "
+            "Fiab. va vacia: un 0,60 goles/90 puede venir de 2.400 minutos o "
+            "de 200 y aqui no hay forma de distinguirlo. Anade la columna de "
+            "minutos al export."
+        )
+    if not report.get("has_age"):
+        warnings.append(
+            "SIN EDAD. El techo (potential_score) no se puede calcular y queda "
+            "vacio, por lo que `breakouts` no devolvera nada. La edad es la "
+            "mitad del calculo de potencial: anadela al export."
+        )
+    if report.get("assumed_position"):
+        assumed = report["assumed_position"]
+        warnings.append(
+            f"Demarcacion declarada a mano: {assumed['rows']} jugadores "
+            f"tratados como {assumed['group']}. Se comparan todos entre si."
+        )
     if report.get("unmapped_position_rows"):
         warnings.append(
             f"{report['unmapped_position_rows']} filas descartadas por posicion "

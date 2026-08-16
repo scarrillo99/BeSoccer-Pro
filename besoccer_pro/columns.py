@@ -36,7 +36,8 @@ VOLUME_METRICS = [
     "aerials_attempted", "duels_won", "duels_attempted", "tackles",
     "tackles_won", "interceptions", "recoveries", "clearances", "blocks",
     "fouls", "fouls_drawn", "saves", "goals_conceded", "claims",
-    "errors_leading_to_shot",
+    "errors_leading_to_shot", "opening_goals", "passes_final_third",
+    "recoveries_final_third",
 ]
 
 # Metricas que ya son ratios/porcentajes: NO se dividen por 90.
@@ -98,6 +99,8 @@ COLUMN_SYNONYMS: dict[str, list[str]] = {
         "besoccer index", "indice besoccer", "indice de rendimiento",
         "indice rendimiento", "performance index", "rating", "valoracion",
         "nota", "indice",
+        # Vista "Ponderación por métrica": el rating sale como "Rating(1-5)".
+        "rating 1 5", "rating 0 5", "ponderacion", "puntuacion ponderada",
     ],
     "elo": ["elo", "elo rating", "indice elo", "puntuacion elo"],
     "reap": ["reap", "indice reap", "reap index", "reap score"],
@@ -148,7 +151,8 @@ COLUMN_SYNONYMS: dict[str, list[str]] = {
     ],
     "conversion_pct": [
         "conversion", "conversion rate", "porcentaje conversion", "efectividad",
-        "% conversion", "goal conversion",
+        "% conversion", "goal conversion", "% efectividad", "efectividad %",
+        "porcentaje efectividad", "% acierto",
     ],
     "touches_box": [
         "touches in box", "toques en area", "toques area",
@@ -158,6 +162,20 @@ COLUMN_SYNONYMS: dict[str, list[str]] = {
     "key_passes": [
         "key passes", "pases clave", "ocasiones creadas", "chances created",
         "kp", "pases de gol",
+    ],
+    "opening_goals": [
+        "primeros goles", "opening goals", "first goals", "goles inaugurales",
+        "primer gol",
+    ],
+    "passes_final_third": [
+        "pases al ultimo tercio con exito", "pases al ultimo tercio",
+        "passes to final third", "successful passes final third",
+        "pases ultimo tercio", "pases al tercio final",
+    ],
+    "recoveries_final_third": [
+        "recuperaciones en ult tercio", "recuperaciones en ultimo tercio",
+        "recoveries final third", "recuperaciones ultimo tercio",
+        "recuperaciones campo rival",
     ],
     "passes": ["passes", "pases", "total passes", "pases totales"],
     "passes_completed": [
