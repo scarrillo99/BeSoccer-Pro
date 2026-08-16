@@ -16,6 +16,8 @@ DISPLAY_NAMES = {
     "age": "Edad",
     "team": "Equipo",
     "league": "Liga",
+    "group": "Gr",
+    "is_reserve_team": "Filial",
     "position_group": "Pos",
     "minutes": "Min",
     "matches": "PJ",

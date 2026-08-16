@@ -96,8 +96,19 @@ leagues:
   europa league:         0.92
   conference league:     0.82
 
-  # --- Filiales y juvenil: ojo, muestras poco fiables ---
+  # --- Fútbol español no profesional ---
+  # OJO: 1a RFEF (2 grupos) y 2a RFEF (5 grupos) son divisiones territoriales.
+  # El coeficiente es el mismo para toda la división, pero la comparación
+  # entre jugadores se hace DENTRO de cada grupo si el export trae la columna.
   primera federacion:    0.62
+  1a rfef:               0.62
+  primera rfef:          0.62
   segunda federacion:    0.52
+  2a rfef:               0.52
+  segunda rfef:          0.52
+  tercera federacion:    0.42
+  3a rfef:               0.42
+
+  # --- Filiales y juvenil: ojo, muestras poco fiables ---
   premier league 2:      0.58
   uefa youth league:     0.55

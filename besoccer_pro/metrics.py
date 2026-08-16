@@ -122,6 +122,40 @@ def add_contract_years(df: pd.DataFrame, today: pd.Timestamp | None = None) -> p
     return out
 
 
+# Patrones de equipo filial. Conservadores a proposito: mejor no marcar un
+# filial que marcar como filial al primer equipo de un club.
+RESERVE_PATTERNS = (
+    r"\s(?:b|c|ii|2)$",           # "Sevilla Atletico B", "Villarreal C"
+    r"\bcastilla\b",              # Real Madrid Castilla
+    r"\bpromesas\b",
+    r"\bfilial\b",
+    # "atlètic" y "athletic", pero NO "atlético": el acento final distingue
+    # al filial (Barça Atlètic) del primer equipo (Atlético de Madrid).
+    r"\bath?l[eèé]tic$",
+    r"\bjuvenil\b",
+    r"\bsub\s?-?\d{2}\b",         # Sub-23, Sub 21
+)
+
+
+def add_team_flags(df: pd.DataFrame) -> pd.DataFrame:
+    """Marca equipos filiales.
+
+    En 1a y 2a RFEF media division son filiales, y no es lo mismo un chaval en
+    el filial de un club de Primera (con ficha, cuerpo tecnico y camino
+    marcado) que uno en un club modesto. Es contexto, no un filtro: el flag se
+    anade y ya decide cada informe.
+    """
+    out = df.copy()
+    if "team" not in out.columns:
+        return out
+    names = out["team"].astype(str).str.lower().str.strip()
+    flag = pd.Series(False, index=out.index)
+    for pattern in RESERVE_PATTERNS:
+        flag |= names.str.contains(pattern, regex=True, na=False)
+    out["is_reserve_team"] = flag
+    return out
+
+
 def add_per90(df: pd.DataFrame) -> pd.DataFrame:
     """Anade columnas `<metrica>_p90` para toda metrica de volumen presente.
 
@@ -215,6 +249,7 @@ def prepare(df: pd.DataFrame, season_end_year: int | None = None) -> pd.DataFram
     out = coerce_numeric(df)
     out = derive_age(out, season_end_year)
     out = add_contract_years(out)
+    out = add_team_flags(out)
     out = add_derived(out)
     out = add_per90(out)
     out = add_derived(out)  # segunda pasada: ratios que dependen de p90

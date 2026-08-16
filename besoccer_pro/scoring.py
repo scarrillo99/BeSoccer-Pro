@@ -139,9 +139,15 @@ def score_players(
     out["pool_size"] = 0
     out["pool_type"] = ""
 
-    # --- 1. Percentil dentro de (liga, demarcacion) ---
-    has_league = "league" in out.columns
-    group_keys = ["league", "position_group"] if has_league else ["position_group"]
+    # --- 1. Percentil dentro de (liga, grupo, demarcacion) ---
+    # El grupo importa tanto como la liga en divisiones territoriales: en 2a
+    # RFEF hay cinco grupos y el nivel entre ellos no es comparable. Si el
+    # export trae la columna, se compara dentro del grupo.
+    group_keys = ["position_group"]
+    if "group" in out.columns and out["group"].notna().any():
+        group_keys.insert(0, "group")
+    if "league" in out.columns:
+        group_keys.insert(0, "league")
 
     for keys, group in out.groupby(group_keys, dropna=False):
         position = keys[-1] if isinstance(keys, tuple) else keys
@@ -154,7 +160,9 @@ def score_players(
             out.loc[group.index, "rate_percentile"] = score
             out.loc[group.index, "metrics_used"] = used
             out.loc[group.index, "pool_size"] = len(group)
-            out.loc[group.index, "pool_type"] = "liga+posicion"
+            out.loc[group.index, "pool_type"] = (
+                "liga+grupo+posicion" if "group" in group_keys else "liga+posicion"
+            )
 
     # --- 2. Fallback: ligas con muestra corta se puntuan contra toda la posicion ---
     pending = out["rate_percentile"].isna()
@@ -246,10 +254,20 @@ def rank(
     min_minutes: int | None = None,
     min_reliability: float | None = None,
     max_contract_years: float | None = None,
+    reserves: str | None = None,
     top: int = 25,
 ) -> pd.DataFrame:
-    """Filtra y ordena un pool ya puntuado."""
+    """Filtra y ordena un pool ya puntuado.
+
+    `reserves`: None = todos, "only" = solo filiales, "exclude" = sin filiales.
+    """
     view = df.copy()
+
+    if reserves and "is_reserve_team" in view.columns:
+        if reserves == "only":
+            view = view[view["is_reserve_team"]]
+        elif reserves == "exclude":
+            view = view[~view["is_reserve_team"]]
 
     if max_contract_years is not None:
         if "contract_years_left" not in view.columns:

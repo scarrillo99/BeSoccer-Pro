@@ -21,9 +21,10 @@ from .positions import POSITION_GROUPS, POSITION_LABELS
 EXTRA_REPORT_COLUMNS = {
     # Las columnas que el export no traiga se omiten solas al formatear.
     "breakouts": [
-        "player", "age", "position_group", "team", "league", "minutes",
-        "perf_score", "rate_score", "potential_score", "visibility_score",
-        "breakout_index", "reliability", "besoccer_index", "contract_years_left",
+        "player", "age", "position_group", "team", "league", "group",
+        "is_reserve_team", "minutes", "perf_score", "rate_score",
+        "potential_score", "visibility_score", "breakout_index", "reliability",
+        "besoccer_index", "contract_years_left",
     ],
     "underperformers": [
         "player", "age", "position_group", "team", "league", "minutes",
@@ -69,6 +70,8 @@ def _add_filter_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--min-age", type=float)
     parser.add_argument("--min-reliability", type=float,
                         help="Fiabilidad minima 0-1 (0.5 ~ 900 minutos).")
+    parser.add_argument("--reserves", choices=["only", "exclude"],
+                        help="Filiales: 'only' solo filiales, 'exclude' sin ellos.")
     parser.add_argument("--max-contract-years", type=float,
                         help="Solo jugadores a los que les quedan como mucho N "
                              "anos de contrato (ej. 1 = ultimo ano, mas barato).")
@@ -221,7 +224,8 @@ def _run(argv=None) -> int:
     common = dict(position=args.position, league=args.league,
                   max_age=args.max_age, min_age=args.min_age,
                   min_reliability=args.min_reliability,
-                  max_contract_years=args.max_contract_years, top=args.top)
+                  max_contract_years=args.max_contract_years,
+                  reserves=args.reserves, top=args.top)
 
     if args.command == "rank":
         result = scoring.rank(

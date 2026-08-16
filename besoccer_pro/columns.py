@@ -15,7 +15,7 @@ import re
 
 # Identificacion del jugador
 IDENTITY_FIELDS = [
-    "player", "team", "league", "country", "season",
+    "player", "team", "league", "group", "country", "season",
     "age", "birth_date", "position", "foot", "height", "market_value",
     "contract_until", "nationality", "player_id",
 ]
@@ -63,6 +63,12 @@ COLUMN_SYNONYMS: dict[str, list[str]] = {
     "league": [
         "league", "liga", "competition", "competicion", "torneo", "campeonato",
         "division", "categoria",
+    ],
+    # Divisiones con varios grupos territoriales (1a y 2a RFEF, Serie C,
+    # Regionalliga...). Es determinante: el nivel entre grupos NO es el mismo.
+    "group": [
+        "group", "grupo", "subgrupo", "sub grupo", "conference", "zona",
+        "grupo competicion",
     ],
     "country": ["country", "pais", "pais liga", "league country"],
     "season": ["season", "temporada", "campana", "year", "ano"],

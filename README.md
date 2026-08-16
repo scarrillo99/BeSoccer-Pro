@@ -113,6 +113,49 @@ python -m besoccer_pro rank --input data/ --map "Índice XYZ=xg" "Mins=minutes"
 
 ---
 
+## Receta: 1ª y 2ª RFEF
+
+Categorías territoriales, y eso cambia dos cosas.
+
+**1. Exporta SIEMPRE la columna `Grupo`.** 2ª RFEF tiene cinco grupos y 1ª RFEF
+dos, y el nivel entre ellos no es el mismo. Sin esa columna el motor mete a los
+cinco grupos en la misma coctelera y el percentil —que es la base de todo—
+queda falseado. Con ella, cada jugador se compara **dentro de su grupo**.
+Compruébalo: la columna `pool_type` debe decir `liga+grupo+posicion`.
+
+**2. Baja el umbral de techo.** El defecto (`--min-potential 60`) está pensado
+para ligas top. Con coeficiente 0,62 y 0,52, en RFEF deja fuera a casi toda la
+categoría. Medido sobre un pool de 756 jugadores: con 60 salen 2 candidatos,
+con 40 salen 8 y la lista es trabajable.
+
+```bash
+# 1ª RFEF: el escalón alto, más candidatos a dar el salto ya
+python -m besoccer_pro breakouts --input data/rfef.csv \
+    --league "Primera Federación" --max-age 23 --min-minutes 700 \
+    --min-potential 45 --top 40 -o informes/1rfef.xlsx
+
+# 2ª RFEF: apuesta más larga, hay que bajar más el umbral
+python -m besoccer_pro breakouts --input data/rfef.csv \
+    --league "Segunda Federación" --max-age 22 --min-minutes 700 \
+    --min-potential 38 --top 40 -o informes/2rfef.xlsx
+
+# Filiales aparte: un chaval del Villarreal B no es la misma operación
+# que uno de un club modesto (ficha, cláusula e interlocutor distintos)
+python -m besoccer_pro breakouts --input data/rfef.csv --reserves exclude \
+    --max-age 23 --min-potential 40
+```
+
+**Los `Nivel` van a parecer bajos** (30-45 donde en LaLiga verías 70). Es
+correcto: la escala es absoluta y cruza países. Un 42 en 2ª RFEF es un
+jugador dominante *en 2ª RFEF*. Lo que ordena la lista es `Irrupcion`, no
+`Nivel`.
+
+**Cuidado con los minutos.** En estas categorías hay mucha rotación. Con menos
+de 700 minutos la `Fiab.` baja de 0,45 y el dato es débil — úsalo para decidir
+a quién ir a ver, no para decidir un fichaje.
+
+---
+
 ## Cómo funciona el modelo
 
 Cinco pasos, todos auditables en `besoccer_pro/scoring.py`:
@@ -213,7 +256,7 @@ besoccer_pro/
   cli.py        línea de comandos
 config/leagues.yaml   coeficientes editables
 tools/make_sample.py  generador de datos sintéticos de prueba
-tests/                82 tests
+tests/                103 tests
 ```
 
 ```bash
