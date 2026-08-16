@@ -20,6 +20,13 @@ IDENTITY_FIELDS = [
     "contract_until", "nationality", "player_id",
 ]
 
+# Indices propios de BeSoccer Pro. No entran en el calculo del nivel (seria
+# circular: son composites de las mismas metricas), pero se arrastran hasta
+# los informes para poder contrastar el modelo contra su indice oficial.
+PROPRIETARY_FIELDS = [
+    "besoccer_index", "elo", "reap", "salary", "injury_days", "potential_rating",
+]
+
 # Metricas de volumen: se convierten a por-90.
 VOLUME_METRICS = [
     "goals", "assists", "xg", "xa", "shots", "shots_on_target",
@@ -77,7 +84,28 @@ COLUMN_SYNONYMS: dict[str, list[str]] = {
     ],
     "contract_until": [
         "contract until", "contrato hasta", "fin contrato", "contract expires",
-        "vencimiento contrato", "contract end",
+        "vencimiento contrato", "contract end", "finalizacion contrato",
+        "expiracion contrato", "hasta",
+    ],
+    # --- indices propios de BeSoccer Pro ---
+    "besoccer_index": [
+        "besoccer index", "indice besoccer", "indice de rendimiento",
+        "indice rendimiento", "performance index", "rating", "valoracion",
+        "nota", "indice",
+    ],
+    "elo": ["elo", "elo rating", "indice elo", "puntuacion elo"],
+    "reap": ["reap", "indice reap", "reap index", "reap score"],
+    "potential_rating": [
+        "potential", "potencial", "indice potencial", "potential rating",
+        "proyeccion",
+    ],
+    "salary": [
+        "salary", "salario", "sueldo", "estimacion salarial", "salario estimado",
+        "wage", "wages", "estimated salary", "ficha",
+    ],
+    "injury_days": [
+        "injury days", "dias lesionado", "dias de baja", "days injured",
+        "tiempo lesionado", "bajas",
     ],
     # --- participacion ---
     "minutes": [
@@ -285,4 +313,5 @@ def map_headers(
 
 ALL_CANONICAL = (
     IDENTITY_FIELDS + CONTEXT_FIELDS + VOLUME_METRICS + RATIO_METRICS
+    + PROPRIETARY_FIELDS
 )

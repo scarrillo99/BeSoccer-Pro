@@ -14,39 +14,58 @@ datos de terceros.
 
 ## Cómo meter tus datos (empieza por aquí)
 
-**No me des tu usuario y contraseña de la plataforma.** Ni a mí ni a ninguna
-herramienta: esto corre en un contenedor temporal, una cuenta de 95.000 €/año
-no se comparte por chat, y casi con seguridad va contra las condiciones de tu
-licencia. No hace falta. Hay dos caminos limpios:
+Tu cuenta de BeSoccer Pro es la que tiene el acceso, y así se queda. Lo que
+hace falta es un puente entre la plataforma y este motor. Dos caminos:
 
-### Camino A — Exports CSV (funciona hoy, sin permisos de nadie)
+### Camino A — Exports CSV (funciona hoy, sin depender de nadie)
 
-1. En BeSoccer Pro, filtra la liga y temporada que quieras.
-2. Exporta el listado a CSV/Excel (los botones de export de la plataforma).
-3. Déjalos en `data/` y ejecuta los comandos de abajo.
+BeSoccer Pro exporta en PDF y **CSV**. Ese CSV es todo lo que hace falta:
+
+1. En la plataforma, monta la búsqueda avanzada con tus filtros (liga,
+   temporada, edad, minutos, demarcación).
+2. Expórtala a CSV. Guarda la búsqueda para repetirla cada mes.
+3. Deja los ficheros en `data/` y lanza los comandos de abajo.
 
 Un fichero por liga. Da igual que las cabeceras estén en castellano o inglés,
 que el separador sea `;` o `,`, o que falten columnas: el cargador lo resuelve
-y te avisa de lo que no reconozca.
+y `doctor` te avisa de lo que no reconozca.
 
-### Camino B — API (para automatizarlo después)
+**Cuantas más columnas metas en el export, mejor.** Prioriza: minutos,
+demarcación, edad, xG, xA, y —si tu plan las incluye— valor de mercado,
+estimación salarial y fin de contrato. Esas tres últimas alimentan el
+"escaparate" y el filtro de vencimiento, que es donde está el margen de
+negociación.
 
-Si tu licencia incluye acceso a API, pide a tu comercial de BeSoccer el
-**endpoint y un token de API** (no tus credenciales personales). Con eso:
+### Camino B — API de BeSoccer (para automatizarlo)
+
+Ojo con esto: **la API de BeSoccer (`api.besoccer.com`) es un producto aparte
+de BeSoccer Pro**, con sus propios planes y su propia clave. Que pagues la
+licencia Pro no implica que tengas API.
+
+Habla con tu gestor de cuenta y pregunta dos cosas concretas: si tu contrato
+incluye acceso a la API, y si no, qué cuesta añadirlo. Pide una **clave de
+API de servicio**, no des tus credenciales personales.
 
 ```bash
-export BESOCCER_API_BASE="https://…"     # lo da el proveedor
-export BESOCCER_API_TOKEN="…"            # token, nunca en un fichero del repo
+export BESOCCER_API_BASE="https://…"     # lo confirma el proveedor
+export BESOCCER_API_TOKEN="…"            # clave, nunca en un fichero del repo
 python -c "from besoccer_pro import api; print(len(api.fetch('players')))"
 ```
 
-El cliente (`besoccer_pro/api.py`) es genérico y se configura por variables de
-entorno o `config/api.yaml`: URL base, estilo de autenticación, ruta al array
-de registros y nombres de los parámetros de paginación. En cuanto sepamos la
-forma exacta de la respuesta, se ajusta la config y queda automatizado.
+El cliente (`besoccer_pro/api.py`) es genérico: URL base, estilo de
+autenticación, ruta al array de registros y parámetros de paginación, todo
+configurable. Cuando tengas la documentación real, se ajusta la config y queda
+automatizado.
 
 > El token va **solo** en variables de entorno. `config/api.yaml` está en el
-> `.gitignore` justamente para que nadie lo suba por error.
+> `.gitignore` para que nadie lo suba por error.
+
+### Lo que no vamos a hacer
+
+Automatizar un navegador contra `pro.besoccer.com` con tu sesión iniciada para
+raspar la web. Es frágil, y casi con seguridad va contra las condiciones de tu
+licencia — precisamente el tipo de cosa que puede costarte la cuenta. El export
+CSV consigue lo mismo de forma legítima.
 
 ---
 
@@ -75,6 +94,9 @@ python -m besoccer_pro underperformers --input data/sample/ --position CM
 
 # 6) Ficha individual con percentiles frente a sus pares
 python -m besoccer_pro profile --input data/sample/ --player "Apellido"
+
+# 7) Talento con el contrato acabándose: techo alto y poca fuerza negociadora
+python -m besoccer_pro breakouts --input data/ --max-age 23 --max-contract-years 1
 
 # Cualquier listado se exporta con -o
 python -m besoccer_pro breakouts --input data/ --max-age 21 -o informes/sub21.xlsx
@@ -137,6 +159,21 @@ buscas.** Es la columna que ordena el comando `breakouts`.
 | `Irrupcion` | `Techo − Escaparate`. Alto = infravalorado |
 | `Brecha` | `Calidad/90 − Nivel`. Alto = rinde más de lo que sus minutos reflejan |
 | `Fiab.` | Fiabilidad de la muestra, 0-1 |
+| `IdxBeSoccer` | El índice de rendimiento de la plataforma, si viene en el export |
+| `AnosContr` | Años de contrato restantes |
+
+### Los índices propios de BeSoccer
+
+Si tu export trae el **índice de rendimiento, Elo, REAP o el rating de
+potencial**, el motor los reconoce y los arrastra hasta los informes — pero
+**no los mete en el cálculo**. Es deliberado: son composites construidos sobre
+las mismas métricas, así que incluirlos sería razonar en círculo. El valor está
+en tener dos criterios independientes uno al lado del otro. Cuando el `Techo`
+y el `IdxBeSoccer` discrepan mucho en un jugador, ahí es donde merece la pena
+poner el vídeo.
+
+El **salario y el valor de mercado** sí entran, pero solo en el "escaparate":
+son lo que el mercado ya paga, no una medida de rendimiento.
 
 ---
 
@@ -176,7 +213,7 @@ besoccer_pro/
   cli.py        línea de comandos
 config/leagues.yaml   coeficientes editables
 tools/make_sample.py  generador de datos sintéticos de prueba
-tests/                71 tests
+tests/                82 tests
 ```
 
 ```bash

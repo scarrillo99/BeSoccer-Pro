@@ -199,16 +199,26 @@ def score_players(
     minutes_pct = _percentile(out["minutes"])
     league_component = out["league_coef"] * 100.0
 
-    if "market_value" in out.columns and out["market_value"].notna().sum() >= max(
-        10, int(0.25 * len(out))
-    ):
-        value_pct = _percentile(out["market_value"])
+    # Senales de "lo que el mercado ya paga por el": valor y salario. El
+    # salario, cuando esta, es la mejor de las dos: refleja el sueldo pactado
+    # hoy, no una estimacion de traspaso.
+    market_signals = []
+    labels = []
+    threshold = max(10, int(0.25 * len(out)))
+    for field, label in (("salary", "salario"), ("market_value", "valor")):
+        if field in out.columns and out[field].notna().sum() >= threshold:
+            pct = _percentile(out[field])
+            market_signals.append(pct.fillna(pct.median()))
+            labels.append(label)
+
+    if market_signals:
+        market_pct = sum(market_signals) / len(market_signals)
         visibility = (
             0.35 * minutes_pct.fillna(0)
             + 0.30 * league_component
-            + 0.35 * value_pct.fillna(value_pct.median())
+            + 0.35 * market_pct
         )
-        out["visibility_basis"] = "minutos+liga+valor"
+        out["visibility_basis"] = "minutos+liga+" + "+".join(labels)
     else:
         visibility = 0.55 * minutes_pct.fillna(0) + 0.45 * league_component
         out["visibility_basis"] = "minutos+liga"
@@ -235,10 +245,19 @@ def rank(
     min_age: float | None = None,
     min_minutes: int | None = None,
     min_reliability: float | None = None,
+    max_contract_years: float | None = None,
     top: int = 25,
 ) -> pd.DataFrame:
     """Filtra y ordena un pool ya puntuado."""
     view = df.copy()
+
+    if max_contract_years is not None:
+        if "contract_years_left" not in view.columns:
+            raise ValueError(
+                "El export no trae fecha de fin de contrato, no se puede "
+                "filtrar por vencimiento. Anade esa columna en BeSoccer Pro."
+            )
+        view = view[view["contract_years_left"] <= max_contract_years]
 
     if position:
         wanted = {p.strip().upper() for p in position.split(",")}

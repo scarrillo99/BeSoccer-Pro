@@ -54,6 +54,7 @@ def coerce_numeric(df: pd.DataFrame) -> pd.DataFrame:
     """Convierte a numerico todas las columnas canonicas que deben serlo."""
     numeric_fields = set(
         cols.VOLUME_METRICS + cols.RATIO_METRICS + cols.CONTEXT_FIELDS
+        + cols.PROPRIETARY_FIELDS
     ) | {"age", "height", "market_value"}
     out = df.copy()
     for column in out.columns:
@@ -86,6 +87,38 @@ def derive_age(df: pd.DataFrame, season_end_year: int | None = None) -> pd.DataF
             out["age"] = out["age"].fillna(computed)
         else:
             out["age"] = computed
+    return out
+
+
+def add_contract_years(df: pd.DataFrame, today: pd.Timestamp | None = None) -> pd.DataFrame:
+    """Anos de contrato restantes a partir de `contract_until`.
+
+    Acepta las formas habituales de export: "2027", "30/06/2027", "2027-06-30"
+    y "jun 2027". Un ano suelto se interpreta como 30 de junio, que es el
+    cierre de temporada europeo.
+    """
+    out = df.copy()
+    if "contract_until" not in out.columns:
+        return out
+
+    raw = out["contract_until"].astype(str).str.strip()
+    reference = today or pd.Timestamp.today()
+
+    # Ano suelto -> 30 de junio de ese ano.
+    year_only = raw.str.fullmatch(r"(19|20)\d{2}(\.0)?")
+    parsed = pd.to_datetime(
+        raw.where(~year_only.fillna(False)), errors="coerce",
+        dayfirst=True, format="mixed",
+    )
+    years = pd.to_numeric(raw.str.extract(r"^((?:19|20)\d{2})")[0], errors="coerce")
+    june = pd.to_datetime(
+        years.where(year_only.fillna(False)).dropna().astype(int).astype(str) + "-06-30",
+        errors="coerce",
+    )
+    parsed = parsed.fillna(june)
+
+    out["contract_until_date"] = parsed
+    out["contract_years_left"] = (parsed - reference).dt.days / 365.25
     return out
 
 
@@ -181,6 +214,7 @@ def prepare(df: pd.DataFrame, season_end_year: int | None = None) -> pd.DataFram
     """Pipeline completo de normalizacion sobre un DataFrame ya mapeado."""
     out = coerce_numeric(df)
     out = derive_age(out, season_end_year)
+    out = add_contract_years(out)
     out = add_derived(out)
     out = add_per90(out)
     out = add_derived(out)  # segunda pasada: ratios que dependen de p90
