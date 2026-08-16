@@ -1,0 +1,17 @@
+# Credenciales — NUNCA subir
+config/api.yaml
+.env
+*.token
+
+# Datos reales exportados de la plataforma (licencia de pago: no van al repo)
+data/*
+!data/sample/
+informes/
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+.DS_Store

@@ -1,0 +1,32 @@
+# Plantilla de configuracion de API.
+#
+# Copiala a config/api.yaml y rellena SOLO los campos no sensibles.
+# El TOKEN NO va aqui: ponlo en la variable de entorno BESOCCER_API_TOKEN.
+# config/api.yaml esta en .gitignore para evitar subidas accidentales.
+#
+# Estos valores son un ESQUELETO: el proveedor debe confirmar la URL real, la
+# ruta de los registros y como pagina. Ajustalo cuando lo tengas por escrito.
+
+base_url: "https://api.proveedor.example/v1"
+
+# bearer -> cabecera "Authorization: Bearer <token>"  (lo mas habitual)
+# header -> cabecera personalizada, indica su nombre en key_name
+# query  -> parametro en la URL, indica su nombre en key_name
+auth_style: "bearer"
+key_name: "X-API-Key"
+
+# Ruta al array de registros dentro del JSON de respuesta.
+# Ej: {"data": {"players": [...]}}  ->  "data.players"
+# Vacio = se busca el primer array de objetos que aparezca.
+records_path: "data.players"
+
+# Paginacion
+page_param: "page"
+size_param: "per_page"
+page_size: 200
+first_page: 1
+max_pages: 100
+
+# Cortesia con el servidor
+timeout: 30
+pause: 0.4

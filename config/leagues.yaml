@@ -1,0 +1,103 @@
+# Coeficientes de fuerza de liga.
+#
+# QUE ES: factor de traduccion entre competiciones. Un 85 en Eredivisie no
+# vale lo mismo que un 85 en Premier; el coeficiente convierte el percentil
+# dentro de la liga a una escala comun para poder cruzar paises.
+#
+# COMO SE USA:  nivel_absoluto = percentil_en_su_liga * coeficiente
+#
+# IMPORTANTE: estos valores son una LINEA BASE EDITABLE, no un dato oficial.
+# Estan puestos a ojo siguiendo el orden habitual de ranking UEFA / valor de
+# plantilla. Ajustalos con vuestro propio criterio de scouting: es el unico
+# parametro del modelo con juicio subjetivo dentro, y cambia los resultados.
+#
+# Las claves se comparan en minusculas y sin acentos. Anade los alias con los
+# que salga cada liga en vuestro export.
+
+default: 0.70   # liga no reconocida -> se asume nivel medio-bajo, y se avisa
+
+leagues:
+  # --- Top 5 europeas ---
+  premier league:        1.00
+  la liga:               0.98
+  laliga:                0.98
+  laliga ea sports:      0.98
+  primera division:      0.98
+  serie a:               0.96
+  bundesliga:            0.96
+  ligue 1:               0.91
+
+  # --- Segundo escalon europeo ---
+  eredivisie:            0.84
+  primeira liga:         0.84
+  liga portugal:         0.84
+  championship:          0.83
+  jupiler pro league:    0.80
+  belgian pro league:    0.80
+  super lig:             0.79
+  superliga:             0.79
+  russian premier league: 0.78
+  bundesliga 2:          0.77
+  2 bundesliga:          0.77
+  laliga hypermotion:    0.77
+  segunda division:      0.77
+  laliga 2:              0.77
+  serie b:               0.75
+  ligue 2:               0.74
+  super league greece:   0.73
+  ekstraklasa:           0.72
+  hnl:                   0.71
+  fortuna liga:          0.70
+  czech first league:    0.70
+  austrian bundesliga:   0.72
+  swiss super league:    0.73
+  danish superliga:      0.73
+  eliteserien:           0.71
+  allsvenskan:           0.71
+  scottish premiership:  0.72
+  liga i:                0.68
+  first league serbia:   0.68
+  nb i:                  0.65
+
+  # --- Sudamerica ---
+  brasileirao:           0.84
+  serie a brasil:        0.84
+  campeonato brasileiro: 0.84
+  liga profesional:      0.80
+  liga profesional argentina: 0.80
+  primera division argentina: 0.80
+  primera a colombia:    0.72
+  liga betplay:          0.72
+  primera division chile: 0.68
+  liga pro ecuador:      0.68
+  liga 1 peru:           0.64
+  primera division uruguay: 0.68
+  serie b brasil:        0.70
+
+  # --- Norteamerica / resto ---
+  mls:                   0.76
+  major league soccer:   0.76
+  liga mx:               0.76
+  liga bbva mx:          0.76
+  usl championship:      0.60
+  saudi pro league:      0.78
+  qatar stars league:    0.66
+  ufl:                   0.60
+  j1 league:             0.75
+  k league 1:            0.73
+  a league:              0.66
+  chinese super league:  0.64
+  botola pro:            0.64
+  egyptian premier league: 0.64
+  south african premiership: 0.62
+
+  # --- Competiciones europeas (muestra corta, tratar con cuidado) ---
+  champions league:      1.05
+  europa league:         0.92
+  conference league:     0.82
+
+  # --- Filiales y juvenil: ojo, muestras poco fiables ---
+  primera federacion:    0.62
+  segunda federacion:    0.52
+  premier league 2:      0.58
+  uefa youth league:     0.55
