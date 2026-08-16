@@ -342,6 +342,70 @@ def breakouts(
     )
 
 
+def target_level(
+    league_strength: LeagueStrength,
+    target_league: str,
+    percentile: float = 50.0,
+) -> float:
+    """Nivel que hay que alcanzar para ser jugador de `target_league`.
+
+    La escala de `perf_score` es percentil-en-su-liga x coeficiente de liga,
+    asi que el listón de una competicion se despeja de la misma formula:
+
+        listón = percentil_objetivo x coeficiente(liga_objetivo)
+
+    Con Segunda (coef 0.77): un jugador de rotacion (p50) son 38.5 puntos;
+    un titular solvente (p65) son 50.0; un jugador top de la categoria (p85)
+    son 65.5. Elegir el percentil es elegir para que rol se ficha.
+    """
+    if not 0 < percentile <= 100:
+        raise ValueError("El percentil objetivo debe estar entre 0 y 100.")
+    return percentile * league_strength.coefficient(target_league)
+
+
+def project(
+    df: pd.DataFrame,
+    league_strength: LeagueStrength | None = None,
+    target_league: str = "Segunda División",
+    target_percentile: float = 50.0,
+    max_age: float | None = 25,
+    min_reliability: float | None = 0.45,
+    include_ready: bool = True,
+    top: int = 40,
+    **filters,
+) -> pd.DataFrame:
+    """Jugadores cuyo techo alcanza el nivel de una competicion objetivo.
+
+    Responde a "quien puede jugar en X", no a "quien es bueno". Anade:
+      target_bar        el listón de la competicion objetivo
+      projection_margin techo - listón (positivo = lo alcanza)
+      ready_now         True si YA esta a ese nivel, sin proyectar nada
+
+    `include_ready=False` deja solo a los que aun no han llegado, que es
+    donde esta el margen de precio.
+    """
+    strength = league_strength or LeagueStrength.load()
+    bar = target_level(strength, target_league, target_percentile)
+
+    view = df.copy()
+    if "potential_score" not in view.columns or view["potential_score"].isna().all():
+        raise ValueError(
+            "No hay techo calculado: el export no trae edad. Sin edad no se "
+            "puede proyectar a ninguna categoria. Anade la columna al export."
+        )
+
+    view["target_bar"] = round(bar, 1)
+    view["projection_margin"] = (view["potential_score"] - bar).round(1)
+    view["ready_now"] = view["perf_score"] >= bar
+
+    view = view[view["projection_margin"] >= 0]
+    if not include_ready:
+        view = view[~view["ready_now"]]
+
+    return rank(view, by="projection_margin", max_age=max_age,
+                min_reliability=min_reliability, top=top, **filters)
+
+
 def underperformers(
     df: pd.DataFrame,
     max_age: float = 25,

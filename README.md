@@ -156,6 +156,61 @@ a quién ir a ver, no para decidir un fichaje.
 
 ---
 
+## Proyectar a una categoría concreta
+
+`breakouts` te dice quién está infravalorado. `project` responde a otra
+pregunta distinta y más útil para fichar: **¿quién puede jugar en Segunda?**
+
+```bash
+python -m besoccer_pro project --input data/rfef.xlsx \
+    --target-league "Segunda División" --target-percentile 65 \
+    --max-age 25 --top 30 -o informes/proyectan_a_segunda.xlsx
+```
+
+El listón sale de la propia escala del modelo:
+
+```
+listón = percentil_objetivo × coeficiente(liga_objetivo)
+```
+
+Con Segunda (0,77): **p50 = 38,5** (jugador de rotación), **p65 = 50,1**
+(titular solvente), **p85 = 65,5** (top de la categoría). Elegir el percentil
+es elegir para qué rol fichas.
+
+Columnas: `Liston` el umbral, `Margen` cuánto lo supera, `YaLoEs` si **ya**
+está a ese nivel hoy (fichaje inmediato) o solo proyecta (apuesta).
+`--only-projects` deja únicamente a los segundos, que es donde está el precio.
+
+### Calibración: léelo antes de usarlo
+
+Medido sobre un pool de RFEF de 394 sub-25: **el listón p50 lo supera el 61%**.
+Un filtro que aprueba a seis de cada diez no es un criterio. Con p65 baja al
+19%, que ya es una lista trabajable.
+
+El comando te imprime ese porcentaje en cada ejecución y te avisa si pasa del
+35%. **Usa la lista como orden, no como aprobado**: quédate con los primeros
+por `Margen` y olvídate del valor absoluto.
+
+Por qué: el techo es una proyección **sin calibrar contra resultados reales**.
+No hay en los datos ningún jugador del que sepamos si llegó o no, así que el
+número ordena candidatos pero **no es una probabilidad**. Para convertirlo en
+una de verdad hace falta el bucle de validación: exportar RFEF de una
+temporada pasada, mirar quién está hoy en Segunda, y ajustar la curva de edad
+con esos aciertos y fallos. Con dos temporadas de export se puede construir.
+
+### El efecto de la edad, que sorprende
+
+Con `--max-age 25` la lista sale copada por chavales de 17-20 años. No es un
+fallo: a los 25 el margen de mejora es 0,26 y a los 18 es 0,94, así que un
+sub-20 con los mismos números proyecta mucho más alto.
+
+Consecuencia práctica: **filtrar hasta 25 años mezcla dos operaciones
+distintas**. Un jugador de 24-25 en esa lista es un fichaje "listo ya" —mira
+`YaLoEs`—; uno de 19 es un proyecto a dos años. Si buscas rendimiento
+inmediato, usa `--min-age 22`. Si buscas plusvalía, `--max-age 21`.
+
+---
+
 ## Cómo funciona el modelo
 
 Cinco pasos, todos auditables en `besoccer_pro/scoring.py`:
@@ -256,7 +311,7 @@ besoccer_pro/
   cli.py        línea de comandos
 config/leagues.yaml   coeficientes editables
 tools/make_sample.py  generador de datos sintéticos de prueba
-tests/                114 tests
+tests/                128 tests
 ```
 
 ```bash

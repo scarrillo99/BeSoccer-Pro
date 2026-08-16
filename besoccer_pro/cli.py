@@ -26,6 +26,12 @@ EXTRA_REPORT_COLUMNS = {
         "potential_score", "visibility_score", "breakout_index", "reliability",
         "besoccer_index", "contract_years_left",
     ],
+    "project": [
+        "player", "age", "position_group", "team", "league", "group",
+        "is_reserve_team", "minutes", "perf_score", "potential_score",
+        "target_bar", "projection_margin", "ready_now", "reliability",
+        "contract_years_left",
+    ],
     "underperformers": [
         "player", "age", "position_group", "team", "league", "minutes",
         "perf_score", "rate_score", "efficiency_gap", "potential_score",
@@ -204,6 +210,19 @@ def _run(argv=None) -> int:
     _add_filter_args(under_cmd)
     under_cmd.add_argument("--min-gap", type=float, default=8.0)
 
+    project_cmd = subparsers.add_parser(
+        "project",
+        help="Quien proyecta al nivel de una categoria concreta (ej. Segunda).")
+    _add_input_args(project_cmd)
+    _add_filter_args(project_cmd)
+    project_cmd.add_argument("--target-league", default="Segunda División",
+                             help="Categoria objetivo (defecto: Segunda División).")
+    project_cmd.add_argument("--target-percentile", type=float, default=50.0,
+                             help="Rol al que se aspira en esa categoria: 50 "
+                                  "rotacion, 65 titular, 85 top. Defecto 50.")
+    project_cmd.add_argument("--only-projects", action="store_true",
+                             help="Excluye a los que YA estan a ese nivel.")
+
     profile_cmd = subparsers.add_parser("profile", help="Ficha detallada de un jugador.")
     _add_input_args(profile_cmd)
     profile_cmd.add_argument("--player", required=True)
@@ -281,6 +300,51 @@ def _run(argv=None) -> int:
         )
         _emit(result, args, EXTRA_REPORT_COLUMNS["breakouts"],
               "techo alto / escaparate bajo")
+        return 0
+
+    if args.command == "project":
+        strength = LeagueStrength.load(args.leagues_config)
+        bar = scoring.target_level(strength, args.target_league, args.target_percentile)
+        filters = {k: v for k, v in common.items()
+                   if k not in ("max_age", "top", "min_reliability")}
+        result = scoring.project(
+            data, strength,
+            target_league=args.target_league,
+            target_percentile=args.target_percentile,
+            max_age=args.max_age if args.max_age is not None else 25,
+            min_reliability=args.min_reliability,
+            include_ready=not args.only_projects,
+            top=args.top,
+            **filters,
+        )
+        # Cuanta gente pasa el listón. Si lo pasa medio pool, el filtro no
+        # esta discriminando y la lista no vale como criterio de fichaje:
+        # mejor saberlo aqui que despues de llamar a doce clubes.
+        max_age = args.max_age if args.max_age is not None else 25
+        elegibles = scoring.rank(data, by="potential_score", max_age=max_age,
+                                 min_reliability=args.min_reliability,
+                                 top=0, **filters)
+        pasan = scoring.project(
+            data, strength, target_league=args.target_league,
+            target_percentile=args.target_percentile, max_age=max_age,
+            min_reliability=args.min_reliability,
+            include_ready=not args.only_projects, top=0, **filters)
+
+        print(f"Listón de {args.target_league} en percentil "
+              f"{args.target_percentile:.0f}: {bar:.1f} puntos de techo",
+              file=sys.stderr)
+        if len(elegibles):
+            share = len(pasan) / len(elegibles)
+            print(f"Lo superan {len(pasan)} de {len(elegibles)} jugadores "
+                  f"elegibles ({share:.0%}).", file=sys.stderr)
+            if share > 0.35:
+                print("  -> Ese porcentaje es demasiado alto para servir de "
+                      "criterio. Sube --target-percentile (65 = titular, "
+                      "85 = top) o usa la lista como ORDEN, quedandote con "
+                      "los primeros por Margen.", file=sys.stderr)
+        print(file=sys.stderr)
+        _emit(result, args, EXTRA_REPORT_COLUMNS["project"],
+              f"proyectan a {args.target_league}")
         return 0
 
     if args.command == "underperformers":
