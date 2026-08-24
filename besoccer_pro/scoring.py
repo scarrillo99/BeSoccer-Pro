@@ -219,6 +219,25 @@ def score_players(
     # Cuanto rinde por minuto frente a lo que se le reconoce.
     out["efficiency_gap"] = out["rate_score"] - out["perf_score"]
 
+    # --- 5b. Cuanto destaca sobre su propio equipo ---
+    # Un jugador en un equipo de zona baja esta penalizado por el contexto:
+    # recibe peores pases, ataca menos y defiende mas. Comparandolo con la
+    # media de SUS COMPANEROS se ve quien esta tirando del carro. La media es
+    # leave-one-out: incluirse a uno mismo diluye justo la senal que se busca,
+    # y mas cuanto menor sea la plantilla.
+    if "team" in out.columns:
+        by_team = out.groupby("team")["perf_score"]
+        squad_total = by_team.transform("sum")
+        squad_size = by_team.transform("count")
+        teammates = (squad_total - out["perf_score"]) / (squad_size - 1).replace(0, np.nan)
+        out["team_score"] = teammates.round(1)
+        out["standout_index"] = (out["perf_score"] - teammates).round(1)
+        out["squad_sampled"] = squad_size.astype(int)
+    else:
+        out["team_score"] = np.nan
+        out["standout_index"] = np.nan
+        out["squad_sampled"] = 0
+
     # --- 6. Visibilidad: lo que hoy ve el mercado ---
     minutes_pct = _percentile(out["minutes"])
     league_component = out["league_coef"] * 100.0
@@ -271,13 +290,18 @@ def rank(
     min_reliability: float | None = None,
     max_contract_years: float | None = None,
     reserves: str | None = None,
+    min_standout: float | None = None,
     top: int = 25,
 ) -> pd.DataFrame:
     """Filtra y ordena un pool ya puntuado.
 
     `reserves`: None = todos, "only" = solo filiales, "exclude" = sin filiales.
+    `min_standout`: cuanto debe superar a la media de sus companeros.
     """
     view = df.copy()
+
+    if min_standout is not None:
+        view = view[view["standout_index"] >= min_standout]
 
     if reserves and "is_reserve_team" in view.columns:
         if reserves == "only":

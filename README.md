@@ -156,6 +156,27 @@ a quién ir a ver, no para decidir un fichaje.
 
 ---
 
+## Destacar en un equipo flojo
+
+Un jugador de zona baja está penalizado por el contexto: recibe peores pases,
+ataca menos y defiende más. El percentil de liga no lo corrige. `standout_index`
+(`Destaca`) sí: compara a cada jugador con **la media de sus propios
+compañeros**, dejando fuera al jugador mismo del cálculo —incluirse diluye
+justo la señal que se busca, y más cuanto más corta sea la plantilla.
+
+```bash
+# El brief clásico de agencia en un comando:
+# sub-22, contrato acabándose, tirando del carro en su equipo
+python -m besoccer_pro breakouts --input data/rfef.xlsx \
+    --max-age 22 --min-minutes 700 --min-potential 40 \
+    --min-standout 8 --max-contract-years 1 --top 40
+```
+
+`Destaca` alto en un equipo de mitad de tabla es señal fuerte. `Destaca` alto
+en un equipo puntero suele ser solo un buen jugador en un buen equipo.
+
+---
+
 ## Proyectar a una categoría concreta
 
 `breakouts` te dice quién está infravalorado. `project` responde a otra
@@ -311,7 +332,7 @@ besoccer_pro/
   cli.py        línea de comandos
 config/leagues.yaml   coeficientes editables
 tools/make_sample.py  generador de datos sintéticos de prueba
-tests/                128 tests
+tests/                135 tests
 ```
 
 ```bash

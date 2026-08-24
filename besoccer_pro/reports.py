@@ -28,6 +28,8 @@ DISPLAY_NAMES = {
     "target_bar": "Liston",
     "projection_margin": "Margen",
     "ready_now": "YaLoEs",
+    "standout_index": "Destaca",
+    "team_score": "NivelEquipo",
     "efficiency_gap": "Brecha",
     "visibility_score": "Escaparate",
     "reliability": "Fiab.",

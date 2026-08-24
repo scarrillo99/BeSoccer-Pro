@@ -23,13 +23,14 @@ EXTRA_REPORT_COLUMNS = {
     "breakouts": [
         "player", "age", "position_group", "team", "league", "group",
         "is_reserve_team", "minutes", "perf_score", "rate_score",
-        "potential_score", "visibility_score", "breakout_index", "reliability",
+        "potential_score", "visibility_score", "breakout_index", "standout_index", "reliability",
         "besoccer_index", "contract_years_left",
     ],
     "project": [
         "player", "age", "position_group", "team", "league", "group",
         "is_reserve_team", "minutes", "perf_score", "potential_score",
-        "target_bar", "projection_margin", "ready_now", "reliability",
+        "target_bar", "projection_margin", "ready_now", "standout_index",
+        "reliability",
         "contract_years_left",
     ],
     "underperformers": [
@@ -85,6 +86,9 @@ def _add_filter_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--min-age", type=float)
     parser.add_argument("--min-reliability", type=float,
                         help="Fiabilidad minima 0-1 (0.5 ~ 900 minutos).")
+    parser.add_argument("--min-standout", type=float,
+                        help="Cuanto debe superar a la media de SUS companeros. "
+                             "Detecta al que tira del carro en un equipo flojo.")
     parser.add_argument("--reserves", choices=["only", "exclude"],
                         help="Filiales: 'only' solo filiales, 'exclude' sin ellos.")
     parser.add_argument("--max-contract-years", type=float,
@@ -275,7 +279,8 @@ def _run(argv=None) -> int:
                   max_age=args.max_age, min_age=args.min_age,
                   min_reliability=args.min_reliability,
                   max_contract_years=args.max_contract_years,
-                  reserves=args.reserves, top=args.top)
+                  reserves=args.reserves, min_standout=args.min_standout,
+                  top=args.top)
 
     if args.command == "rank":
         result = scoring.rank(
