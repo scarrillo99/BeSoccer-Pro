@@ -156,6 +156,23 @@ a quién ir a ver, no para decidir un fichaje.
 
 ---
 
+## Umbrales numéricos por posición
+
+En vez de fijar cifras de memoria, sácalas de tu propio pool:
+
+```bash
+python -m besoccer_pro benchmarks --input data/rfef.xlsx \
+    --position W --league "Primera Federación"
+```
+
+Devuelve p50/p75/p90 de cada métrica que pesa en esa demarcación, ordenadas
+por peso, con la muestra sobre la que se calculan. Criterio de uso: **exigir
+p75 en las 2-3 métricas de más peso, y no bajar de p50 en el resto.**
+
+Los umbrales de una categoría no valen para otra, así que recalcula por liga.
+
+---
+
 ## Destacar en un equipo flojo
 
 Un jugador de zona baja está penalizado por el contexto: recibe peores pases,
@@ -332,7 +349,7 @@ besoccer_pro/
   cli.py        línea de comandos
 config/leagues.yaml   coeficientes editables
 tools/make_sample.py  generador de datos sintéticos de prueba
-tests/                135 tests
+tests/                140 tests
 ```
 
 ```bash

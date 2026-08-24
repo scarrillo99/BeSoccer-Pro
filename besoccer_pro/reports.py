@@ -210,3 +210,46 @@ def summary(df: pd.DataFrame) -> str:
     for position, count in df["position_group"].value_counts().items():
         lines.append(f"  {POSITION_LABELS.get(position, position):<24} {count:>5}")
     return "\n".join(lines)
+
+
+def benchmarks(df: pd.DataFrame, position: str, percentiles=(50, 75, 90)) -> str:
+    """Umbrales reales por metrica para una demarcacion, sacados del pool.
+
+    Responde a "que numeros debo exigir a un extremo en 1a RFEF" con los
+    percentiles que de verdad hay en la categoria, en vez de con una cifra
+    de memoria. Solo se muestran las metricas que pesan en esa demarcacion.
+    """
+    group = position.strip().upper()
+    weights = POSITION_WEIGHTS.get(group)
+    if not weights:
+        return f"Demarcacion no reconocida: {position}"
+
+    peers = df[df["position_group"] == group]
+    if len(peers) < 8:
+        return (f"Solo {len(peers)} {POSITION_LABELS.get(group, group)} en el pool: "
+                "muestra insuficiente para fijar umbrales.")
+
+    scope = ", ".join(sorted(peers["league"].astype(str).unique())[:3]) \
+        if "league" in peers.columns else "pool cargado"
+
+    lines = [
+        f"Umbrales para {POSITION_LABELS.get(group, group)} — {scope}",
+        f"n = {len(peers)} jugadores",
+        "",
+        f"{'Metrica':<30}" + "".join(f"{'p'+str(p):>9}" for p in percentiles)
+        + f"{'peso':>8}",
+        "-" * (30 + 9 * len(percentiles) + 8),
+    ]
+    ordered = sorted(weights.items(), key=lambda kv: -abs(kv[1]))
+    for metric, weight in ordered:
+        if metric not in peers.columns or peers[metric].notna().sum() < 5:
+            continue
+        values = peers[metric].dropna()
+        cells = "".join(f"{values.quantile(p / 100):>9.2f}" for p in percentiles)
+        flag = " (menos=mejor)" if weight < 0 else ""
+        lines.append(f"{metric:<30}{cells}{abs(weight):>8.2f}{flag}")
+
+    lines.append("")
+    lines.append("Criterio: exigir p75 en las 2-3 metricas de mas peso, y no "
+                 "estar por debajo de p50 en el resto.")
+    return "\n".join(lines)

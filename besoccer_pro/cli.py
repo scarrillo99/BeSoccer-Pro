@@ -227,6 +227,13 @@ def _run(argv=None) -> int:
     project_cmd.add_argument("--only-projects", action="store_true",
                              help="Excluye a los que YA estan a ese nivel.")
 
+    bench_cmd = subparsers.add_parser(
+        "benchmarks",
+        help="Umbrales numericos reales por metrica para una demarcacion.")
+    _add_input_args(bench_cmd)
+    bench_cmd.add_argument("--position", "-p", required=True)
+    bench_cmd.add_argument("--league", "-l", help="Acotar a una liga concreta.")
+
     profile_cmd = subparsers.add_parser("profile", help="Ficha detallada de un jugador.")
     _add_input_args(profile_cmd)
     profile_cmd.add_argument("--player", required=True)
@@ -269,6 +276,14 @@ def _run(argv=None) -> int:
 
     if args.command == "summary":
         print(reports.summary(data))
+        return 0
+
+    if args.command == "benchmarks":
+        pool = data
+        if args.league:
+            needle = args.league.lower()
+            pool = pool[pool["league"].astype(str).str.lower().str.contains(needle, na=False)]
+        print(reports.benchmarks(pool, args.position))
         return 0
 
     if args.command == "profile":
